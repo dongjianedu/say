@@ -17,15 +17,15 @@ export function TranscribeButton(props: Props): JSX.Element {
             className='flex-1 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all text-lg font-semibold flex items-center justify-center gap-3 disabled:bg-blue-400 disabled:cursor-not-allowed'
         >
             {isModelLoading ? (
-                <Spinner text={"Loading model..."} />
+                <Spinner text={"正在加载模型..."} />
             ) : isTranscribing ? (
-                <Spinner text={"Transcribing..."} />
+                <Spinner text={"正在转录..."} />
             ) : (
                 <>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                     </svg>
-                    Transcribe Audio
+                    开始转录
                 </>
             )}
         </button>

@@ -28,7 +28,7 @@ export default function TextSummary({
   return (
     <div className="mt-4 p-4 bg-gray-100 rounded-lg relative">
       <div className="flex justify-between items-start mb-2">
-        <h3 className="text-lg font-semibold">AI Summary</h3>
+        <h3 className="text-lg font-semibold">AI 摘要</h3>
         <div className="flex gap-2">
           <button
             onClick={() => setShowSettings(!showSettings)}
@@ -48,7 +48,7 @@ export default function TextSummary({
       {showSettings && (
         <div className="mb-4 p-2 bg-white rounded border">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Model Selection
+            模型选择
           </label>
           <select
             value={model}

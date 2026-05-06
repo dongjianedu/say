@@ -12,71 +12,71 @@ interface ModelOption {
 const modelOptions: ModelOption[] = [
     {
         id: 'Xenova/whisper-tiny.en',
-        name: 'Tiny (English)',
-        description: 'Fast, lightweight model optimized for English transcription',
+        name: 'Tiny (英文)',
+        description: '快速、轻量，针对英文转录优化的模型',
         isEnglishOnly: true,
         size: 'tiny'
     },
     {
         id: 'Xenova/whisper-tiny',
-        name: 'Tiny (Multilingual)',
-        description: 'Fast, lightweight model supporting multiple languages',
+        name: 'Tiny (多语言)',
+        description: '快速、轻量，支持多语言转录的模型',
         isEnglishOnly: false,
         size: 'tiny'
     },
     {
         id: 'Xenova/whisper-small.en',
-        name: 'Small (English)',
-        description: 'Balanced performance for English transcription',
+        name: 'Small (英文)',
+        description: '性能均衡的英文转录模型',
         isEnglishOnly: true,
         size: 'small'
     },
     {
         id: 'Xenova/whisper-small',
-        name: 'Small (Multilingual)',
-        description: 'Balanced performance supporting multiple languages',
+        name: 'Small (多语言)',
+        description: '性能均衡，支持多语言转录的模型',
         isEnglishOnly: false,
         size: 'small'
     },
     {
         id: 'Xenova/whisper-base.en',
-        name: 'Base (English)',
-        description: 'Standard model for English transcription',
+        name: 'Base (英文)',
+        description: '标准英文转录模型',
         isEnglishOnly: true,
         size: 'base'
     },
     {
         id: 'Xenova/whisper-base',
-        name: 'Base (Multilingual)',
-        description: 'Standard model supporting multiple languages',
+        name: 'Base (多语言)',
+        description: '标准模型，支持多语言转录',
         isEnglishOnly: false,
         size: 'base'
     },
     {
         id: 'Xenova/whisper-medium.en',
-        name: 'Medium (English)',
-        description: 'High accuracy for English transcription',
+        name: 'Medium (英文)',
+        description: '高精度英文转录模型',
         isEnglishOnly: true,
         size: 'medium'
     },
     {
         id: 'Xenova/whisper-large',
         name: 'Large',
-        description: 'Highest accuracy for multilingual transcription',
+        description: '最高精度的多语言转录模型',
         isEnglishOnly: false,
         size: 'large'
     },
     {
         id: 'Xenova/whisper-large-v2',
         name: 'Large V2',
-        description: 'Latest version with improved accuracy',
+        description: '最新版本，精度进一步提升',
         isEnglishOnly: false,
         size: 'large-v2'
     },
     {
         id: 'Xenova/nb-whisper-tiny-beta',
         name: 'Tiny Beta',
-        description: 'Experimental tiny model with new features',
+        description: '实验性 tiny 模型，包含新特性',
         isEnglishOnly: false,
         size: 'tiny',
         isBeta: true
@@ -84,7 +84,7 @@ const modelOptions: ModelOption[] = [
     {
         id: 'Xenova/nb-whisper-small-beta',
         name: 'Small Beta',
-        description: 'Experimental small model with new features',
+        description: '实验性 small 模型，包含新特性',
         isEnglishOnly: false,
         size: 'small',
         isBeta: true
@@ -92,7 +92,7 @@ const modelOptions: ModelOption[] = [
     {
         id: 'Xenova/nb-whisper-base-beta',
         name: 'Base Beta',
-        description: 'Experimental base model with new features',
+        description: '实验性 base 模型，包含新特性',
         isEnglishOnly: false,
         size: 'base',
         isBeta: true
@@ -100,7 +100,7 @@ const modelOptions: ModelOption[] = [
     {
         id: 'Xenova/nb-whisper-medium-beta',
         name: 'Medium Beta',
-        description: 'Experimental medium model with new features',
+        description: '实验性 medium 模型，包含新特性',
         isEnglishOnly: false,
         size: 'medium',
         isBeta: true
@@ -121,7 +121,7 @@ export function ModelSelector({ selectedModel, onModelChange, className = '' }: 
     return (
         <div className={`space-y-2 ${className}`}>
             <label htmlFor="model-select" className="block text-sm font-medium text-slate-600">
-                Transcription Model
+                转录模型
             </label>
             <select
                 id="model-select"
@@ -137,8 +137,8 @@ export function ModelSelector({ selectedModel, onModelChange, className = '' }: 
             </select>
             <p className="text-sm text-slate-500">
                 {modelOptions.find(m => m.id === selectedModel)?.isEnglishOnly 
-                    ? 'This model is optimized for English only.'
-                    : 'This model supports multiple languages.'}
+                    ? '此模型仅针对英文进行优化。'
+                    : '此模型支持多种语言。'}
             </p>
         </div>
     );

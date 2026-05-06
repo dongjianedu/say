@@ -215,17 +215,17 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
           value={title}
           onChange={handleTitleChange}
           className="text-2xl font-bold w-2/3 p-2 border rounded"
-          placeholder="Note Title"
+          placeholder="笔记标题"
         />
-        <div className="text-sm text-gray-500 space-y-1">
-          <div>Words: {getWordCount(content)}</div>
-          <div>Characters: {getCharacterCount(content)}</div>
+            <div className="text-sm text-gray-500 space-y-1">
+          <div>词数：{getWordCount(content)}</div>
+          <div>字符数：{getCharacterCount(content)}</div>
         </div>
       </div>
 
       <div className="text-sm text-gray-600 mb-4 space-y-1">
-        <div>Created: {formatDate(note.created)}</div>
-        <div>Last edited: {formatDate(note.lastEdited)}</div>
+        <div>创建于：{formatDate(note.created)}</div>
+        <div>最后编辑：{formatDate(note.lastEdited)}</div>
       </div>
 
       <div className="mb-4">
@@ -247,7 +247,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
           value={tagInput}
           onChange={(e) => setTagInput(e.target.value)}
           onKeyPress={handleAddTag}
-          placeholder="Add tags (press Enter)"
+          placeholder="添加标签（按回车确认）"
           className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
@@ -291,7 +291,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
           className="flex items-center gap-2 px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <AiOutlineRobot className="w-5 h-5" />
-          AI Summary
+          AI 摘要
         </button>
         <button
           id="copyButton"
@@ -299,25 +299,25 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
           className="flex items-center gap-2 px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-600 transition-colors"
         >
           <IoCopyOutline className="w-5 h-5" />
-          Copy Note
+          复制笔记
         </button>
         <button
           onClick={() => setShowVersionModal(true)}
           className="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors"
         >
-          Save Version
+          保存版本
         </button>
       </div>
 
       {showVersionModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Save Version</h3>
+            <h3 className="text-lg font-semibold mb-4">保存版本</h3>
             <input
               type="text"
               value={versionDescription}
               onChange={(e) => setVersionDescription(e.target.value)}
-              placeholder="Version description"
+              placeholder="版本描述"
               className="w-full px-3 py-2 border rounded mb-4"
             />
             <div className="flex justify-end gap-2">
@@ -325,13 +325,13 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
                 onClick={() => setShowVersionModal(false)}
                 className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-600 transition-colors"
               >
-                Cancel
+                取消
               </button>
               <button
                 onClick={handleSaveVersion}
                 className="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors"
               >
-                Save
+                保存
               </button>
             </div>
           </div>
@@ -344,7 +344,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
 
       {note.versions.length > 0 && (
         <div className="mt-8 border-t pt-4">
-          <h3 className="text-lg font-semibold mb-4">Version History</h3>
+          <h3 className="text-lg font-semibold mb-4">版本历史</h3>
           <div className="space-y-2">
             {note.versions.map((version, index) => (
               <div key={version.timestamp} className="flex items-center justify-between bg-gray-50 p-3 rounded">
@@ -356,7 +356,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
                   onClick={() => onRestoreVersion(note.id, version)}
                   className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors text-sm"
                 >
-                  Restore
+                  恢复
                 </button>
               </div>
             ))}

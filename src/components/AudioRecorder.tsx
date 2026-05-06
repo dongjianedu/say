@@ -70,7 +70,7 @@ const AudioRecorder: React.FC<Props> = ({ onRecordingComplete }) => {
   return (
     <div className="flex flex-col items-center gap-4 p-6 w-full max-w-2xl mx-auto">
       <div className="w-full bg-white rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-bold mb-4">Record Audio</h2>
+        <h2 className="text-2xl font-bold mb-4">录制音频</h2>
         <div className="relative w-full">
           {mediaRecorder ? (
             <div className="w-full h-40 rounded-lg mb-4 bg-[rgb(15,23,42)] flex items-center justify-center overflow-hidden">
@@ -91,14 +91,14 @@ const AudioRecorder: React.FC<Props> = ({ onRecordingComplete }) => {
               className="w-full h-40 rounded-lg mb-4 bg-[rgb(15,23,42)] flex items-center justify-center"
             >
               <span className="text-white/50">
-                Click Start Recording to begin
+                点击"开始录音"按钮开始
               </span>
             </div>
           )}
         </div>
         <div className="text-center mb-4">
           <div className="text-xl font-semibold text-gray-700">
-            {isRecording ? `Recording: ${formatTime(recordingTime)}` : 'Ready to Record'}
+            {isRecording ? `录音中：${formatTime(recordingTime)}` : '准备就绪'}
           </div>
         </div>
         <button
@@ -108,9 +108,9 @@ const AudioRecorder: React.FC<Props> = ({ onRecordingComplete }) => {
               ? 'bg-red-500 hover:bg-red-600' 
               : 'bg-blue-500 hover:bg-blue-600'
           } transition-all shadow-md hover:shadow-lg`}
-          aria-label={isRecording ? "Stop Recording" : "Start Recording"}
+          aria-label={isRecording ? "停止录音" : "开始录音"}
         >
-          {isRecording ? 'Stop Recording' : 'Start Recording'}
+          {isRecording ? '停止录音' : '开始录音'}
         </button>
       </div>
     </div>

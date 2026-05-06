@@ -256,7 +256,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                         </svg>
-                        Start Recording
+                        开始录音
                     </button>
                     
                     <div className="flex gap-4 w-full max-w-md">
@@ -267,14 +267,14 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
                             </svg>
-                            From URL
+                            从链接导入
                         </button>
                         
                         <label className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            Upload File
+                            上传文件
                             <input
                                 type="file"
                                 accept="audio/*"
@@ -316,7 +316,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
                             onClick={resetAudio}
                             className="px-4 py-2 text-red-500 hover:text-red-600 transition-colors"
                         >
-                            Cancel
+                            取消
                         </button>
                     </div>
 
@@ -327,13 +327,13 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        Export Audio
+                        导出音频
                     </button>
 
                     {transcriber.progressItems.length > 0 && (
                         <div className="space-y-2">
                             <label className="text-sm text-slate-600">
-                                Loading model files... (only run once)
+                                正在加载模型文件...（仅需运行一次）
                             </label>
                             {transcriber.progressItems.map((data) => (
                                 <Progress
@@ -349,10 +349,10 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
 
             <Modal
                 show={showUrlModal}
-                title="Add Audio from URL"
+                title="从链接添加音频"
                 content={
                     <>
-                        <p className="mb-4">Enter the URL of the audio file you want to transcribe.</p>
+                        <p className="mb-4">输入要转录的音频文件链接。</p>
                         <UrlInput
                             onChange={(e) => setAudioDownloadUrl(e.target.value)}
                             value={audioDownloadUrl || Constants.DEFAULT_AUDIO_URL}
@@ -360,13 +360,13 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
                     </>
                 }
                 onClose={() => setShowUrlModal(false)}
-                submitText="Load Audio"
+                submitText="加载音频"
                 onSubmit={() => {}}
             />
 
             <Modal
                 show={showRecordModal}
-                title="Record Audio"
+                title="录制音频"
                 content={
                     <AudioRecorder onRecordingComplete={setAudioFromRecording} />
                 }

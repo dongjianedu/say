@@ -52,7 +52,7 @@ const NoteList: React.FC<Props> = ({
             <div className="mb-4">
                 <input
                     type="text"
-                    placeholder="Search notes..."
+                    placeholder="搜索笔记..."
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -63,7 +63,7 @@ const NoteList: React.FC<Props> = ({
                 onClick={onCreateNote}
                 className="w-full mb-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
             >
-                Create New Note
+                创建新笔记
             </button>
 
             <div className="flex-grow overflow-y-auto mb-4">
@@ -105,7 +105,7 @@ const NoteList: React.FC<Props> = ({
                             </div>
                         )}
                         <div className="text-xs text-gray-500 mt-2">
-                            Last edited: {formatDate(note.lastEdited)}
+                            最后编辑：{formatDate(note.lastEdited)}
                         </div>
                     </div>
                 ))}
@@ -116,10 +116,10 @@ const NoteList: React.FC<Props> = ({
                     onClick={onExportNotes}
                     className="w-full px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
                 >
-                    Export Notes
+                    导出笔记
                 </button>
                 <label className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer transition-colors text-center">
-                    Import Notes
+                    导入笔记
                     <input
                         type="file"
                         accept=".json"

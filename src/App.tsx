@@ -67,7 +67,7 @@ function App() {
         const now = Date.now();
         const newNote: Note = {
             id: now.toString(),
-            title: 'New Note',
+            title: '新笔记',
             content: '',
             tags: [],
             versions: [],
@@ -87,7 +87,7 @@ function App() {
             const now = Date.now();
             const newNote: Note = {
                 id: now.toString(),
-                title: 'Transcribed Note',
+                title: '转录笔记',
                 content: text,
                 tags: [],
                 versions: [],
@@ -191,11 +191,11 @@ function App() {
                         }));
                         updateNotes(migratedNotes);
                     } else {
-                        alert('Invalid notes format');
+                        alert('无效的笔记格式');
                     }
                 } catch (error) {
                     console.error('Error importing notes:', error);
-                    alert('Error importing notes');
+                    alert('导入笔记出错');
                 }
             };
             reader.readAsText(file);
@@ -214,7 +214,7 @@ function App() {
     }, [notes, searchQuery]);
 
     if (!isLoaded) {
-        return <div>Loading...</div>;
+        return <div>加载中...</div>;
     }
 
     return (
@@ -227,7 +227,7 @@ function App() {
                             onClick={() => setShowNoteList(!showNoteList)}
                             className="px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 rounded-md transition-colors"
                         >
-                            {showNoteList ? 'Hide Notes' : 'Show Notes'}
+                            {showNoteList ? '隐藏笔记' : '显示笔记'}
                         </button>
                     </div>
                 </div>
@@ -251,7 +251,7 @@ function App() {
                 <section className={`flex-grow p-2 md:p-4 ${showNoteList ? 'md:w-[calc(100%-18rem)]' : 'w-full'}`}>
                     <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
                         <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
-                            <h2 className="text-xl md:text-2xl font-semibold mb-4">Quick Record</h2>
+                            <h2 className="text-xl md:text-2xl font-semibold mb-4">快速录音</h2>
                             <AudioManager 
                                 transcriber={transcriber}
                                 onTranscriptionComplete={handleTranscriptionComplete}
@@ -260,17 +260,17 @@ function App() {
 
                         {showInfo && (
                             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 md:p-6">
-    <h3 className="text-base md:text-lg font-semibold text-blue-900 mb-2">Welcome to Say!</h3>
+    <h3 className="text-base md:text-lg font-semibold text-blue-900 mb-2">欢迎使用 Say！</h3>
     <p className="text-sm md:text-base text-blue-800">
-        Easily record and transcribe your audio files into text using AI. When you start recording, 
-        it will download a small language model to your device. All processing happens privately and locally.
+        使用 AI 轻松录制并将音频文件转录为文本。开始录制时，
+        系统会下载一个小型语言模型到您的设备。所有处理都在本地私密完成。
     </p>
     <ul className="text-sm md:text-base list-disc list-inside pl-4 text-blue-800 md:p-6 p-6">
-        <li>🎙️ High-quality on-device transcription with Whisper (tiny or base)</li>
-        <li>📂 Transcribe recordings, local and hosted audio files</li>
-        <li>📝 Rich-text editing, note management, and versioning</li>
-        <li>✍️ AI summaries of notes powered by T5</li>
-        <li>🔄 Export and import all your notes any time</li>
+        <li>🎙️ 高质量的本地 Whisper 语音识别（tiny 或 base 模型）</li>
+        <li>📂 转录录音、本地和网络音频文件</li>
+        <li>📝 富文本编辑、笔记管理和版本控制</li>
+        <li>✍️ T5 驱动的 AI 笔记摘要</li>
+        <li>🔄 随时导出和导入所有笔记</li>
     </ul>
 </div>
                         )}
