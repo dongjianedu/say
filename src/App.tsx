@@ -29,6 +29,7 @@ function App() {
     const [showNoteList, setShowNoteList] = useState(false);
     const [showInfo, setShowInfo] = useState(true);
     const lastTranscriptionRef = useRef<string | null>(null);
+    const notesRef = useRef<Note[]>([]);
 
     useEffect(() => {
         const loadNotes = () => {
@@ -44,6 +45,7 @@ function App() {
                         lastEdited: note.lastEdited || Date.now()
                     }));
                     setNotes(migratedNotes);
+                    notesRef.current = migratedNotes;
                 } catch (error) {
                     console.error('Error parsing stored notes:', error);
                 }
@@ -60,6 +62,7 @@ function App() {
 
     const updateNotes = useCallback((newNotes: Note[]) => {
         setNotes(newNotes);
+        notesRef.current = newNotes;
         saveNotes(newNotes);
     }, [saveNotes]);
 
@@ -74,14 +77,14 @@ function App() {
             created: now,
             lastEdited: now
         };
-        updateNotes([...notes, newNote]);
+        const currentNotes = notesRef.current;
+        updateNotes([...currentNotes, newNote]);
         setSelectedNoteId(newNote.id);
         return newNote.id;
-    }, [notes, updateNotes]);
+    }, [updateNotes]);
 
     const handleTranscriptionComplete = useCallback((text: string) => {
         setShowInfo(false);
-        // Only create a new note if this is a new transcription
         if (text !== lastTranscriptionRef.current) {
             lastTranscriptionRef.current = text;
             const now = Date.now();
@@ -94,29 +97,33 @@ function App() {
                 created: now,
                 lastEdited: now
             };
-            updateNotes([...notes, newNote]);
+            const currentNotes = notesRef.current;
+            updateNotes([...currentNotes, newNote]);
             setSelectedNoteId(newNote.id);
             setShowNoteList(true);
         }
-    }, [notes, updateNotes]);
+    }, [updateNotes]);
 
     const handleDeleteNote = useCallback((id: string) => {
-        const updatedNotes = notes.filter(note => note.id !== id);
+        const currentNotes = notesRef.current;
+        const updatedNotes = currentNotes.filter(note => note.id !== id);
         updateNotes(updatedNotes);
         if (selectedNoteId === id) {
             setSelectedNoteId(null);
         }
-    }, [notes, selectedNoteId, updateNotes]);
+    }, [selectedNoteId, updateNotes]);
 
     const handleUpdateNote = useCallback((updatedNote: Note) => {
-        const updatedNotes = notes.map(note => 
+        const currentNotes = notesRef.current;
+        const updatedNotes = currentNotes.map(note => 
             note.id === updatedNote.id ? { ...updatedNote, lastEdited: Date.now() } : note
         );
         updateNotes(updatedNotes);
-    }, [notes, updateNotes]);
+    }, [updateNotes]);
 
     const handleSaveVersion = useCallback((noteId: string, description: string) => {
-        const note = notes.find(n => n.id === noteId);
+        const currentNotes = notesRef.current;
+        const note = currentNotes.find(n => n.id === noteId);
         if (note) {
             const newVersion: NoteVersion = {
                 content: note.content,
@@ -130,10 +137,11 @@ function App() {
             };
             handleUpdateNote(updatedNote);
         }
-    }, [notes, handleUpdateNote]);
+    }, [handleUpdateNote]);
 
     const handleRestoreVersion = useCallback((noteId: string, version: NoteVersion) => {
-        const note = notes.find(n => n.id === noteId);
+        const currentNotes = notesRef.current;
+        const note = currentNotes.find(n => n.id === noteId);
         if (note) {
             const updatedNote = {
                 ...note,
@@ -142,10 +150,11 @@ function App() {
             };
             handleUpdateNote(updatedNote);
         }
-    }, [notes, handleUpdateNote]);
+    }, [handleUpdateNote]);
 
     const handleUpdateTags = useCallback((noteId: string, tags: string[]) => {
-        const note = notes.find(n => n.id === noteId);
+        const currentNotes = notesRef.current;
+        const note = currentNotes.find(n => n.id === noteId);
         if (note) {
             const updatedNote = {
                 ...note,
@@ -154,10 +163,10 @@ function App() {
             };
             handleUpdateNote(updatedNote);
         }
-    }, [notes, handleUpdateNote]);
+    }, [handleUpdateNote]);
 
     const handleExportNotes = useCallback(() => {
-        const notesBlob = new Blob([JSON.stringify(notes, null, 2)], { type: 'application/json' });
+        const notesBlob = new Blob([JSON.stringify(notesRef.current, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(notesBlob);
         const a = document.createElement('a');
         a.href = url;
@@ -166,7 +175,7 @@ function App() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-    }, [notes]);
+    }, []);
 
     const handleImportNotes = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];

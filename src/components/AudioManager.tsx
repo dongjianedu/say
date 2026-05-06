@@ -33,10 +33,10 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
 
     const isAudioLoading = progress !== undefined;
 
-    const resetAudio = () => {
+    const resetAudio = useCallback(() => {
         setAudioData(undefined);
         setAudioDownloadUrl(undefined);
-    };
+    }, []);
 
     // Watch for transcription completion
     useEffect(() => {
@@ -45,7 +45,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
             onTranscriptionComplete(transcriber.output.text);
             resetAudio();
         }
-    }, [transcriber.output?.text, transcriber.isBusy, onTranscriptionComplete]);
+    }, [transcriber.output?.text, transcriber.isBusy, onTranscriptionComplete, resetAudio]);
 
     const setAudioFromDownload = async (data: ArrayBuffer, mimeType: string) => {
         const audioCTX = new AudioContext({ sampleRate: Constants.SAMPLING_RATE });
