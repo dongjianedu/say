@@ -325,7 +325,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
                     {transcriber.isModelLoading && (
                         <div className="space-y-2">
                             <label className="text-sm text-slate-600">
-                                正在转录音频...
+                                正在上传并转录音频，请稍候...
                             </label>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }} />

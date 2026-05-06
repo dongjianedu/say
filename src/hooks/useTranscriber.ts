@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Constants from "../utils/Constants";
 import type { ProgressItem } from "../types/model";
 
@@ -7,6 +7,18 @@ interface TranscriberCompleteData {
     text: string;
     chunks: { text: string; start_time: number; end_time: number; language: string }[];
     language: string;
+}
+
+interface TranscribeAsyncResponse {
+    task_id: string;
+    status: string;
+}
+
+interface TranscribeStatusResponse {
+    task_id: string;
+    status: "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED";
+    result?: TranscriberCompleteData;
+    message?: string | null;
 }
 
 export interface TranscriberData {
@@ -35,33 +47,31 @@ export interface Transcriber {
     setLanguage: (language: string) => void;
 }
 
+const POLL_INTERVAL_MS = 3000;
+const MAX_POLL_COUNT = 200; // 10 minutes max
+
 export function useTranscriber(): Transcriber {
-    const [transcript, setTranscript] = useState<TranscriberData | undefined>(
-        undefined,
-    );
+    const [transcript, setTranscript] = useState<TranscriberData | undefined>(undefined);
     const [isBusy, setIsBusy] = useState(false);
     const [isModelLoading, setIsModelLoading] = useState(false);
     const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
+    const abortRef = useRef(false);
 
     const [model, setModel] = useState<string>(Constants.DEFAULT_MODEL);
     const [subtask, setSubtask] = useState<string>(Constants.DEFAULT_SUBTASK);
-    const [quantized, setQuantized] = useState<boolean>(
-        Constants.DEFAULT_QUANTIZED,
-    );
-    const [multilingual, setMultilingual] = useState<boolean>(
-        Constants.DEFAULT_MULTILINGUAL,
-    );
-    const [language, setLanguage] = useState<string>(
-        Constants.DEFAULT_LANGUAGE,
-    );
+    const [quantized, setQuantized] = useState<boolean>(Constants.DEFAULT_QUANTIZED);
+    const [multilingual, setMultilingual] = useState<boolean>(Constants.DEFAULT_MULTILINGUAL);
+    const [language, setLanguage] = useState<string>(Constants.DEFAULT_LANGUAGE);
 
     const onInputChange = useCallback(() => {
+        abortRef.current = true;
         setTranscript(undefined);
     }, []);
 
     const postRequest = useCallback(
         async (audioBlob: Blob | undefined) => {
             if (audioBlob) {
+                abortRef.current = false;
                 setTranscript(undefined);
                 setIsBusy(true);
                 setIsModelLoading(true);
@@ -85,30 +95,64 @@ export function useTranscriber(): Transcriber {
                     ossUrl = uploadResult.url;
                     console.log('Audio uploaded to OSS:', ossUrl);
 
-                    const transcribeFormData = new FormData();
-                    transcribeFormData.append('audio', audioBlob, 'recording.webm');
-
-                    const response = await fetch(Constants.TRANSCRIBE_API_URL, {
+                    const asyncResponse = await fetch(Constants.TRANSCRIBE_ASYNC_API_URL, {
                         method: 'POST',
-                        body: transcribeFormData,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ audio_url: ossUrl }),
                     });
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                    if (!asyncResponse.ok) {
+                        throw new Error(`Submit async task failed! status: ${asyncResponse.status}`);
                     }
 
-                    const result: TranscriberCompleteData = await response.json();
+                    const asyncResult: TranscribeAsyncResponse = await asyncResponse.json();
+                    const taskId = asyncResult.task_id;
+                    console.log('Async task submitted:', taskId);
 
-                    setTranscript({
-                        isBusy: false,
-                        text: result.text,
-                        chunks: result.chunks.map(chunk => ({
-                            text: chunk.text,
-                            timestamp: [chunk.start_time / 1000, chunk.end_time / 1000] as [number, number],
-                        })),
-                        ossUrl,
-                    });
+                    let pollCount = 0;
+                    let statusResponse: TranscribeStatusResponse;
+
+                    while (pollCount < MAX_POLL_COUNT) {
+                        if (abortRef.current) {
+                            console.log('Transcription aborted');
+                            return;
+                        }
+
+                        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+
+                        try {
+                            const statusRes = await fetch(`${Constants.TRANSCRIBE_STATUS_API_URL}/${taskId}`);
+                            statusResponse = await statusRes.json();
+                        } catch (err) {
+                            pollCount++;
+                            if (pollCount >= 3) {
+                                throw new Error('Failed to poll status after retries');
+                            }
+                            continue;
+                        }
+
+                        if (statusResponse.status === "SUCCEEDED") {
+                            const result = statusResponse.result!;
+                            setTranscript({
+                                isBusy: false,
+                                text: result.text,
+                                chunks: result.chunks.map(chunk => ({
+                                    text: chunk.text,
+                                    timestamp: [chunk.start_time / 1000, chunk.end_time / 1000] as [number, number],
+                                })),
+                                ossUrl,
+                            });
+                            return;
+                        } else if (statusResponse.status === "FAILED") {
+                            throw new Error(statusResponse.message || 'Transcription failed');
+                        }
+
+                        pollCount++;
+                    }
+
+                    throw new Error('Transcription timed out');
                 } catch (error) {
+                    if (abortRef.current) return;
                     console.error('Transcription error:', error);
                     alert(`转录失败: ${error instanceof Error ? error.message : '未知错误'}`);
                     setTranscript(undefined);
