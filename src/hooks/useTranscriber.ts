@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import Constants from "../utils/Constants";
-import { audioBufferToWav } from "../utils/audioEncoder";
 import type { ProgressItem } from "../types/model";
 
 
@@ -21,7 +20,7 @@ export interface Transcriber {
     isBusy: boolean;
     isModelLoading: boolean;
     progressItems: ProgressItem[];
-    start: (audioData: AudioBuffer | undefined) => void;
+    start: (audioBlob: Blob | undefined) => void;
     output?: TranscriberData;
     model: string;
     setModel: (model: string) => void;
@@ -60,16 +59,15 @@ export function useTranscriber(): Transcriber {
     }, []);
 
     const postRequest = useCallback(
-        async (audioData: AudioBuffer | undefined) => {
-            if (audioData) {
+        async (audioBlob: Blob | undefined) => {
+            if (audioBlob) {
                 setTranscript(undefined);
                 setIsBusy(true);
                 setIsModelLoading(true);
 
                 try {
-                    const wavBlob = audioBufferToWav(audioData);
                     const formData = new FormData();
-                    formData.append('audio', wavBlob, 'recording.wav');
+                    formData.append('audio', audioBlob, 'recording.webm');
 
                     const response = await fetch(Constants.TRANSCRIBE_API_URL, {
                         method: 'POST',

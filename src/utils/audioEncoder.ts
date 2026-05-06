@@ -59,3 +59,73 @@ function floatTo16BitPCM(view: DataView, offset: number, input: Float32Array): v
     view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
   }
 }
+
+/**
+ * 将 AudioBuffer 编码为 webm/opus 格式的 Blob
+ * 使用 AudioContext + MediaStreamDestination + MediaRecorder 实现
+ * @param audioBuffer - 输入的 AudioBuffer 对象
+ * @returns webm/opus 格式的 Blob 对象
+ */
+export async function audioBufferToWebm(audioBuffer: AudioBuffer): Promise<Blob> {
+  const audioCtx = new AudioContext({ sampleRate: audioBuffer.sampleRate });
+  const destination = audioCtx.createMediaStreamDestination();
+
+  const bufferSource = audioCtx.createBufferSource();
+  bufferSource.buffer = audioBuffer;
+  bufferSource.connect(destination);
+  bufferSource.start();
+
+  const mimeType = getSupportedMimeType();
+  const mediaRecorder = new MediaRecorder(destination.stream, {
+    mimeType,
+    audioBitsPerSecond: 64000, // 64 kbps，语音识别足够
+  });
+
+  const chunks: Blob[] = [];
+  mediaRecorder.ondataavailable = (event) => {
+    if (event.data.size > 0) {
+      chunks.push(event.data);
+    }
+  };
+
+  const duration = audioBuffer.duration * 1000;
+
+  return new Promise<Blob>((resolve, reject) => {
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: mimeType });
+      audioCtx.close();
+      resolve(blob);
+    };
+
+    mediaRecorder.onerror = () => {
+      audioCtx.close();
+      reject(new Error('MediaRecorder error'));
+    };
+
+    mediaRecorder.start();
+
+    setTimeout(() => {
+      mediaRecorder.stop();
+    }, duration + 100);
+  });
+}
+
+/**
+ * 获取浏览器支持的 webm/opus MIME 类型
+ */
+function getSupportedMimeType(): string {
+  const types = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+  ];
+
+  for (const type of types) {
+    if (MediaRecorder.isTypeSupported(type)) {
+      return type;
+    }
+  }
+
+  throw new Error('No supported audio recording format found');
+}

@@ -5,6 +5,23 @@ interface Props {
   onRecordingComplete: (blob: Blob) => void;
 }
 
+function getSupportedMimeType(): string {
+  const types = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+  ];
+
+  for (const type of types) {
+    if (MediaRecorder.isTypeSupported(type)) {
+      return type;
+    }
+  }
+
+  return 'audio/webm';
+}
+
 const AudioRecorder: React.FC<Props> = ({ onRecordingComplete }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -23,7 +40,11 @@ const AudioRecorder: React.FC<Props> = ({ onRecordingComplete }) => {
       });
       
       streamRef.current = stream;
-      const recorder = new MediaRecorder(stream);
+      const mimeType = getSupportedMimeType();
+      const recorder = new MediaRecorder(stream, {
+        mimeType,
+        audioBitsPerSecond: 64000,
+      });
       
       recorder.addEventListener('dataavailable', handleDataAvailable);
       recorder.start();

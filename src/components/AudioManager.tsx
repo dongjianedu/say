@@ -7,6 +7,7 @@ import { TranscribeButton } from "./TranscribeButton";
 import Constants from "../utils/Constants";
 import { Transcriber } from "../hooks/useTranscriber";
 import AudioRecorder from "./AudioRecorder";
+import { audioBufferToWebm } from "../utils/audioEncoder";
 
 export enum AudioSource {
     URL = "URL",
@@ -23,6 +24,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
     const [progress, setProgress] = useState<number | undefined>(undefined);
     const [audioData, setAudioData] = useState<{
         buffer: AudioBuffer;
+        blob: Blob;
         url: string;
         source: AudioSource;
         mimeType: string;
@@ -51,8 +53,10 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
         const audioCTX = new AudioContext({ sampleRate: Constants.SAMPLING_RATE });
         const blobUrl = URL.createObjectURL(new Blob([data], { type: "audio/*" }));
         const decoded = await audioCTX.decodeAudioData(data);
+        const webmBlob = await audioBufferToWebm(decoded);
         setAudioData({
             buffer: decoded,
+            blob: webmBlob,
             url: blobUrl,
             source: AudioSource.URL,
             mimeType: mimeType,
@@ -74,6 +78,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
             setProgress(undefined);
             setAudioData({
                 buffer: decoded,
+                blob: data,
                 url: blobUrl,
                 source: AudioSource.RECORDING,
                 mimeType: data.type,
@@ -96,9 +101,11 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
 
             const audioCTX = new AudioContext({ sampleRate: Constants.SAMPLING_RATE });
             const decoded = await audioCTX.decodeAudioData(arrayBuffer);
+            const webmBlob = await audioBufferToWebm(decoded);
             transcriber.onInputChange();
             setAudioData({
                 buffer: decoded,
+                blob: webmBlob,
                 url: blobUrl,
                 source: AudioSource.FILE,
                 mimeType: file.type,
@@ -147,7 +154,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
     const handleTranscribeClick = useCallback(() => {
         if (!audioData) return;
         transcriber.onInputChange(); // Reset transcriber state
-        transcriber.start(audioData.buffer);
+        transcriber.start(audioData.blob);
     }, [audioData, transcriber]);
 
     const convertToMp3 = async (audioBuffer: AudioBuffer): Promise<Blob> => {
