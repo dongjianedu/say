@@ -32,4 +32,5 @@ export default {
     DEFAULT_QUANTIZED: isMobileOrTablet,
     DEFAULT_MULTILINGUAL: false,
     TRANSCRIBE_API_URL: "http://47.95.178.169:8000/transcribe",
+    SUMMARIZE_API_URL: "http://47.95.178.169:8000/summarize",
 };

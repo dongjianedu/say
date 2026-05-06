@@ -51,12 +51,9 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   const editorRef = useRef<any>(null);
   const {
     isLoading,
-    progressItems,
     summary,
-    model,
     summarize,
     clearSummary,
-    changeModel,
   } = useSummarizer();
 
   useEffect(() => {
@@ -278,10 +275,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
       <TextSummary
         summary={summary}
         isLoading={isLoading}
-        progressItems={progressItems}
         onClose={clearSummary}
-        model={model}
-        onModelChange={changeModel}
       />
 
       <div className="flex gap-2 mt-4 mb-4">
