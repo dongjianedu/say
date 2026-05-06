@@ -231,7 +231,7 @@ function App() {
             <header className='bg-slate-800 text-white p-4 shadow-lg'>
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                        <h1 className='text-3xl font-bold'>Say</h1>
+                        <h1 className='text-3xl font-bold'>格调9问AI助手</h1>
                         <button
                             onClick={() => setShowNoteList(!showNoteList)}
                             className="px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 rounded-md transition-colors"
@@ -269,18 +269,11 @@ function App() {
 
                         {showInfo && (
                             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 md:p-6">
-    <h3 className="text-base md:text-lg font-semibold text-blue-900 mb-2">欢迎使用 Say！</h3>
+    <h3 className="text-base md:text-lg font-semibold text-blue-900 mb-2">欢迎使用格调9问AI助手</h3>
     <p className="text-sm md:text-base text-blue-800">
-        使用 AI 轻松录制并将音频文件转录为文本。开始录制时，
-        系统会下载一个小型语言模型到您的设备。所有处理都在本地私密完成。
+        使用麦克风录音，格调9会将您的语音转录成文字并保存为笔记。
+        通过AI摘要功能，您可以一键把采访内容整理成格调9问。
     </p>
-    <ul className="text-sm md:text-base list-disc list-inside pl-4 text-blue-800 md:p-6 p-6">
-        <li>🎙️ 高质量的本地 Whisper 语音识别（tiny 或 base 模型）</li>
-        <li>📂 转录录音、本地和网络音频文件</li>
-        <li>📝 富文本编辑、笔记管理和版本控制</li>
-        <li>✍️ T5 驱动的 AI 笔记摘要</li>
-        <li>🔄 随时导出和导入所有笔记</li>
-    </ul>
 </div>
                         )}
 
