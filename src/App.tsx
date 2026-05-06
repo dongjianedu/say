@@ -18,6 +18,7 @@ interface Note {
   versions: NoteVersion[];
   created: number;
   lastEdited: number;
+  ossUrl?: string;
 }
 
 function App() {
@@ -42,7 +43,8 @@ function App() {
                         tags: note.tags || [],
                         versions: note.versions || [],
                         created: note.created || Date.now(),
-                        lastEdited: note.lastEdited || Date.now()
+                        lastEdited: note.lastEdited || Date.now(),
+                        ossUrl: note.ossUrl || undefined
                     }));
                     setNotes(migratedNotes);
                     notesRef.current = migratedNotes;
@@ -83,7 +85,7 @@ function App() {
         return newNote.id;
     }, [updateNotes]);
 
-    const handleTranscriptionComplete = useCallback((text: string) => {
+    const handleTranscriptionComplete = useCallback((text: string, ossUrl?: string) => {
         setShowInfo(false);
         if (text !== lastTranscriptionRef.current) {
             lastTranscriptionRef.current = text;
@@ -95,7 +97,8 @@ function App() {
                 tags: [],
                 versions: [],
                 created: now,
-                lastEdited: now
+                lastEdited: now,
+                ossUrl
             };
             const currentNotes = notesRef.current;
             updateNotes([...currentNotes, newNote]);

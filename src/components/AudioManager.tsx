@@ -17,7 +17,7 @@ export enum AudioSource {
 
 interface Props {
     transcriber: Transcriber;
-    onTranscriptionComplete?: (text: string) => void;
+    onTranscriptionComplete?: (text: string, ossUrl?: string) => void;
 }
 
 export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
@@ -44,10 +44,10 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
     useEffect(() => {
         // Only call onTranscriptionComplete when transcription is finished (not busy) and we have output
         if (transcriber.output && !transcriber.isBusy && onTranscriptionComplete) {
-            onTranscriptionComplete(transcriber.output.text);
+            onTranscriptionComplete(transcriber.output.text, transcriber.output.ossUrl);
             resetAudio();
         }
-    }, [transcriber.output?.text, transcriber.isBusy, onTranscriptionComplete, resetAudio]);
+    }, [transcriber.output?.text, transcriber.output?.ossUrl, transcriber.isBusy, onTranscriptionComplete, resetAudio]);
 
     const setAudioFromDownload = async (data: ArrayBuffer, mimeType: string) => {
         const audioCTX = new AudioContext({ sampleRate: Constants.SAMPLING_RATE });

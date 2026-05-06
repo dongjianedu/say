@@ -13,6 +13,7 @@ export interface TranscriberData {
     isBusy: boolean;
     text: string;
     chunks: { text: string; timestamp: [number, number | null] }[];
+    ossUrl?: string;
 }
 
 export interface Transcriber {
@@ -65,13 +66,31 @@ export function useTranscriber(): Transcriber {
                 setIsBusy(true);
                 setIsModelLoading(true);
 
+                let ossUrl: string | undefined;
+
                 try {
-                    const formData = new FormData();
-                    formData.append('audio', audioBlob, 'recording.webm');
+                    const uploadFormData = new FormData();
+                    uploadFormData.append('file', audioBlob, 'recording.webm');
+
+                    const uploadResponse = await fetch(Constants.UPLOAD_API_URL, {
+                        method: 'POST',
+                        body: uploadFormData,
+                    });
+
+                    if (!uploadResponse.ok) {
+                        throw new Error(`Upload failed! status: ${uploadResponse.status}`);
+                    }
+
+                    const uploadResult = await uploadResponse.json();
+                    ossUrl = uploadResult.url;
+                    console.log('Audio uploaded to OSS:', ossUrl);
+
+                    const transcribeFormData = new FormData();
+                    transcribeFormData.append('audio', audioBlob, 'recording.webm');
 
                     const response = await fetch(Constants.TRANSCRIBE_API_URL, {
                         method: 'POST',
-                        body: formData,
+                        body: transcribeFormData,
                     });
 
                     if (!response.ok) {
@@ -87,6 +106,7 @@ export function useTranscriber(): Transcriber {
                             text: chunk.text,
                             timestamp: [chunk.start_time / 1000, chunk.end_time / 1000] as [number, number],
                         })),
+                        ossUrl,
                     });
                 } catch (error) {
                     console.error('Transcription error:', error);
