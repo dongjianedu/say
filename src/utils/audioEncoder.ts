@@ -73,12 +73,11 @@ export async function audioBufferToWebm(audioBuffer: AudioBuffer): Promise<Blob>
   const bufferSource = audioCtx.createBufferSource();
   bufferSource.buffer = audioBuffer;
   bufferSource.connect(destination);
-  bufferSource.start();
 
   const mimeType = getSupportedMimeType();
   const mediaRecorder = new MediaRecorder(destination.stream, {
     mimeType,
-    audioBitsPerSecond: 64000, // 64 kbps，语音识别足够
+    audioBitsPerSecond: 64000,
   });
 
   const chunks: Blob[] = [];
@@ -88,8 +87,6 @@ export async function audioBufferToWebm(audioBuffer: AudioBuffer): Promise<Blob>
     }
   };
 
-  const duration = audioBuffer.duration * 1000;
-
   return new Promise<Blob>((resolve, reject) => {
     mediaRecorder.onstop = () => {
       const blob = new Blob(chunks, { type: mimeType });
@@ -97,16 +94,17 @@ export async function audioBufferToWebm(audioBuffer: AudioBuffer): Promise<Blob>
       resolve(blob);
     };
 
-    mediaRecorder.onerror = () => {
+    mediaRecorder.onerror = (err) => {
       audioCtx.close();
-      reject(new Error('MediaRecorder error'));
+      reject(new Error(`MediaRecorder error: ${err}`));
+    };
+
+    bufferSource.onended = () => {
+      mediaRecorder.stop();
     };
 
     mediaRecorder.start();
-
-    setTimeout(() => {
-      mediaRecorder.stop();
-    }, duration + 100);
+    bufferSource.start();
   });
 }
 
