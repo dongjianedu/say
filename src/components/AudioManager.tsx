@@ -6,9 +6,7 @@ import AudioPlayer from "./AudioPlayer";
 import { TranscribeButton } from "./TranscribeButton";
 import Constants from "../utils/Constants";
 import { Transcriber } from "../hooks/useTranscriber";
-import Progress from "./Progress";
 import AudioRecorder from "./AudioRecorder";
-import { ModelSelector } from "./ModelSelector";
 
 export enum AudioSource {
     URL = "URL",
@@ -152,13 +150,6 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
         transcriber.start(audioData.buffer);
     }, [audioData, transcriber]);
 
-    const handleModelChange = useCallback((modelId: string) => {
-        transcriber.setModel(modelId);
-        // Update multilingual setting based on model selection
-        const isEnglishOnly = modelId.endsWith('.en');
-        transcriber.setMultilingual(!isEnglishOnly);
-    }, [transcriber]);
-
     const convertToMp3 = async (audioBuffer: AudioBuffer): Promise<Blob> => {
         // Create an offline audio context
         const offlineCtx = new OfflineAudioContext(
@@ -285,12 +276,6 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
                     </div>
                 </div>
             )}
-            
-            <ModelSelector 
-                selectedModel={transcriber.model}
-                onModelChange={handleModelChange}
-                className="mb-6"
-            />
 
             {isAudioLoading && (
                 <div className="w-full bg-gray-200 rounded-full h-1">
@@ -330,18 +315,14 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
                         导出音频
                     </button>
 
-                    {transcriber.progressItems.length > 0 && (
+                    {transcriber.isModelLoading && (
                         <div className="space-y-2">
                             <label className="text-sm text-slate-600">
-                                正在加载模型文件...（仅需运行一次）
+                                正在转录音频...
                             </label>
-                            {transcriber.progressItems.map((data) => (
-                                <Progress
-                                    key={data.file}
-                                    text={data.file}
-                                    percentage={data.progress}
-                                />
-                            ))}
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }} />
+                            </div>
                         </div>
                     )}
                 </div>

@@ -31,4 +31,5 @@ export default {
     DEFAULT_LANGUAGE: "english",
     DEFAULT_QUANTIZED: isMobileOrTablet,
     DEFAULT_MULTILINGUAL: false,
+    TRANSCRIBE_API_URL: "http://47.95.178.169:8000/transcribe",
 };

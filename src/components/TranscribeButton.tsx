@@ -17,7 +17,7 @@ export function TranscribeButton(props: Props): JSX.Element {
             className='flex-1 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all text-lg font-semibold flex items-center justify-center gap-3 disabled:bg-blue-400 disabled:cursor-not-allowed'
         >
             {isModelLoading ? (
-                <Spinner text={"正在加载模型..."} />
+                <Spinner text={"正在转录..."} />
             ) : isTranscribing ? (
                 <Spinner text={"正在转录..."} />
             ) : (
