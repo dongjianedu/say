@@ -250,7 +250,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
       </div>
       
       <Editor
-        apiKey='hs3cwcc85xer8s856zt0id82ropre2dgte3zc2p9gn82978o'
+        apiKey='uqfaw6h3gd0jg71puwetiiwvitmaq3wa5flh6xv4omv6yyj0'
         onInit={(evt, editor) => editorRef.current = editor}
         value={content}
         onEditorChange={handleEditorChange}
