@@ -7,7 +7,7 @@ import { TranscribeButton } from "./TranscribeButton";
 import Constants from "../utils/Constants";
 import { Transcriber } from "../hooks/useTranscriber";
 import AudioRecorder from "./AudioRecorder";
-import { audioBufferToWebm } from "../utils/audioEncoder";
+import { audioBufferToWav } from "../utils/audioEncoder";
 
 export enum AudioSource {
     URL = "URL",
@@ -53,10 +53,10 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
         const audioCTX = new AudioContext({ sampleRate: Constants.SAMPLING_RATE });
         const blobUrl = URL.createObjectURL(new Blob([data], { type: "audio/*" }));
         const decoded = await audioCTX.decodeAudioData(data);
-        const webmBlob = await audioBufferToWebm(decoded);
+        const wavBlob = audioBufferToWav(decoded);
         setAudioData({
             buffer: decoded,
-            blob: webmBlob,
+            blob: wavBlob,
             url: blobUrl,
             source: AudioSource.URL,
             mimeType: mimeType,
@@ -99,25 +99,17 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
             const arrayBuffer = e.target?.result as ArrayBuffer;
             if (!arrayBuffer) return;
 
-            try {
-                const audioCTX = new AudioContext({ sampleRate: Constants.SAMPLING_RATE });
-                const decoded = await audioCTX.decodeAudioData(arrayBuffer);
-                const webmBlob = await audioBufferToWebm(decoded);
-                transcriber.onInputChange();
-                setAudioData({
-                    buffer: decoded,
-                    blob: webmBlob,
-                    url: blobUrl,
-                    source: AudioSource.FILE,
-                    mimeType: file.type,
-                });
-            } catch (error) {
-                console.error('Error processing audio file:', error);
-                alert(`处理音频文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
-            }
-        };
-        reader.onerror = () => {
-            alert('读取文件失败');
+            const audioCTX = new AudioContext({ sampleRate: Constants.SAMPLING_RATE });
+            const decoded = await audioCTX.decodeAudioData(arrayBuffer);
+            const wavBlob = audioBufferToWav(decoded);
+            transcriber.onInputChange();
+            setAudioData({
+                buffer: decoded,
+                blob: wavBlob,
+                url: blobUrl,
+                source: AudioSource.FILE,
+                mimeType: file.type,
+            });
         };
         reader.readAsArrayBuffer(file);
     };
