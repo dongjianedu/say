@@ -24,7 +24,7 @@ app.add_middleware(
 # 初始化云服务
 transcriber_service = TranscriberService(
     api_key=os.getenv("DASHSCOPE_API_KEY") or os.getenv("TRANSCRIBE_API_KEY", ""),
-    model=os.getenv("TRANSCRIBE_MODEL", "fun-asr")
+    model=os.getenv("TRANSCRIBE_MODEL", "fun-asr-realtime")
 )
 
 summarizer_service = SummarizerService(
