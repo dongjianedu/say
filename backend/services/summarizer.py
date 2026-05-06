@@ -92,6 +92,8 @@ class SummarizerService:
         if not self.is_configured:
             raise Exception("摘要服务未配置，请设置 SUMMARIZE_API_KEY 和 SUMMARIZE_BASE_URL")
 
+        actual_model = model if model and model != "default" else self.default_model
+
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
                 headers = {
@@ -100,7 +102,7 @@ class SummarizerService:
                 }
 
                 payload = {
-                    "model": model or self.default_model,
+                    "model": actual_model,
                     "messages": messages,
                     "max_tokens": max_tokens,
                     "temperature": temperature,
@@ -233,7 +235,7 @@ class SummarizerService:
 
             return {
                 "summary": content,
-                "model": model or self.default_model,
+                "model": model if model and model != "default" else self.default_model,
                 "template": template_name
             }
 
