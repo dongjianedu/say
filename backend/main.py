@@ -51,6 +51,8 @@ class SummarizeRequest(BaseModel):
     model: Optional[str] = "default"
     max_tokens: int = 1024
     temperature: float = 0.3
+    existing_summary: Optional[str] = None
+    feedback: Optional[str] = None
 
 # 响应模型
 class TranscribeResponse(BaseModel):
@@ -146,15 +148,28 @@ async def summarize_stream(request: SummarizeRequest):
     """
     流式生成文本摘要，返回 Server-Sent Events
     支持打字机效果，实时显示生成内容
+    如果提供了 existing_summary 和 feedback，则使用 summary_refinement 模板进行优化
     """
     async def generate():
         try:
+            # 如果提供了已有摘要和修改意见，使用优化模板
+            if request.existing_summary and request.feedback:
+                template_name = "summary_refinement"
+                extra_kwargs = {
+                    "summary": request.existing_summary,
+                    "feedback": request.feedback
+                }
+            else:
+                template_name = request.template_name
+                extra_kwargs = {}
+
             async for token in summarizer_service.summarize_with_template_stream(
                 text=request.text,
-                template_name=request.template_name,
+                template_name=template_name,
                 model=request.model,
                 max_tokens=request.max_tokens,
-                temperature=request.temperature
+                temperature=request.temperature,
+                **extra_kwargs
             ):
                 yield f"data: {json.dumps({'token': token})}\n\n"
             yield f"data: {json.dumps({'done': True})}\n\n"

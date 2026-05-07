@@ -5,7 +5,7 @@ export const useSummarizer = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
 
-  const summarize = useCallback(async (text: string) => {
+  const summarize = useCallback(async (text: string, existingSummary?: string, feedback?: string) => {
     setIsLoading(true);
     setSummary('');
 
@@ -19,6 +19,8 @@ export const useSummarizer = () => {
           text,
           template_name: templateName,
           max_tokens: 4096,
+          existing_summary: existingSummary || null,
+          feedback: feedback || null,
         }),
       });
 

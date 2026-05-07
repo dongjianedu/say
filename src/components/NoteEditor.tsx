@@ -47,6 +47,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   const [tagInput, setTagInput] = useState('');
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [versionDescription, setVersionDescription] = useState('');
+  const [summaryFeedback, setSummaryFeedback] = useState('');
   const lastTranscriptRef = useRef('');
   const editorRef = useRef<any>(null);
   const {
@@ -114,7 +115,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
     if (editorRef.current) {
       const textContent = editorRef.current.getContent({ format: 'text' });
       if (textContent.trim()) {
-        await summarize(textContent);
+        await summarize(textContent, summary || undefined, summaryFeedback || undefined);
       }
     }
   };
@@ -277,6 +278,18 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
         isLoading={isLoading}
         onClose={clearSummary}
       />
+
+      {summary && !isLoading && (
+        <div className="mt-4">
+          <textarea
+            value={summaryFeedback}
+            onChange={(e) => setSummaryFeedback(e.target.value)}
+            placeholder="输入对 AI 摘要的修改意见，点击 AI 摘要按钮重新生成..."
+            className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            rows={2}
+          />
+        </div>
+      )}
 
       <div className="flex gap-2 mt-4 mb-4">
         <button
