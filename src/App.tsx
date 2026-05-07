@@ -107,6 +107,27 @@ function App() {
         }
     }, [updateNotes]);
 
+    const handleAutoTranscriptionComplete = useCallback((text: string, ossUrl?: string) => {
+        if (!text) return;
+        setShowInfo(false);
+        const now = Date.now();
+        const segmentCount = notesRef.current.filter(n => n.title.startsWith('转录片段')).length + 1;
+        const newNote: Note = {
+            id: `${now}-${segmentCount}`,
+            title: `转录片段 ${segmentCount}`,
+            content: text,
+            tags: [],
+            versions: [],
+            created: now,
+            lastEdited: now,
+            ossUrl
+        };
+        const currentNotes = notesRef.current;
+        updateNotes([...currentNotes, newNote]);
+        setSelectedNoteId(newNote.id);
+        setShowNoteList(true);
+    }, [updateNotes]);
+
     const handleDeleteNote = useCallback((id: string) => {
         const currentNotes = notesRef.current;
         const updatedNotes = currentNotes.filter(note => note.id !== id);
@@ -264,9 +285,10 @@ function App() {
                     <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
                         <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
                             <h2 className="text-xl md:text-2xl font-semibold mb-4">快速录音</h2>
-                            <AudioManager 
+                            <AudioManager
                                 transcriber={transcriber}
                                 onTranscriptionComplete={handleTranscriptionComplete}
+                                onAutoTranscriptionComplete={handleAutoTranscriptionComplete}
                             />
                         </div>
 

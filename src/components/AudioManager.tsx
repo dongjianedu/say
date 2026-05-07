@@ -17,9 +17,10 @@ export enum AudioSource {
 interface Props {
     transcriber: Transcriber;
     onTranscriptionComplete?: (text: string, ossUrl?: string) => void;
+    onAutoTranscriptionComplete?: (text: string, ossUrl?: string) => void;
 }
 
-export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
+export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTranscriptionComplete }: Props) {
     const [progress, setProgress] = useState<number | undefined>(undefined);
     const [audioData, setAudioData] = useState<{
         blob: Blob;
@@ -30,6 +31,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
     const [audioDownloadUrl, setAudioDownloadUrl] = useState<string | undefined>(undefined);
     const [showUrlModal, setShowUrlModal] = useState(false);
     const [showRecordModal, setShowRecordModal] = useState(false);
+    const [isAutoTranscribing, setIsAutoTranscribing] = useState(false);
 
     const isAudioLoading = progress !== undefined;
 
@@ -38,7 +40,6 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
         setAudioDownloadUrl(undefined);
     }, []);
 
-    // Watch for transcription completion
     useEffect(() => {
         if (transcriber.output && !transcriber.isBusy && onTranscriptionComplete) {
             onTranscriptionComplete(transcriber.output.text, transcriber.output.ossUrl);
@@ -146,6 +147,76 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
         }
     }, [audioData]);
 
+    const handleSegmentAvailable = useCallback((blob: Blob, index: number) => {
+        setIsAutoTranscribing(true);
+        console.log(`Audio segment ${index + 1} available, size: ${blob.size} bytes`);
+
+        const processSegment = async () => {
+            try {
+                const uploadFormData = new FormData();
+                uploadFormData.append('file', blob, `segment-${index}.webm`);
+
+                const uploadResponse = await fetch(Constants.UPLOAD_API_URL, {
+                    method: 'POST',
+                    body: uploadFormData,
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error(`Upload failed! status: ${uploadResponse.status}`);
+                }
+
+                const uploadResult = await uploadResponse.json();
+                const ossUrl = uploadResult.url;
+
+                const asyncResponse = await fetch(Constants.TRANSCRIBE_ASYNC_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ audio_url: ossUrl }),
+                });
+
+                if (!asyncResponse.ok) {
+                    throw new Error(`Submit async task failed! status: ${asyncResponse.status}`);
+                }
+
+                const asyncResult = await asyncResponse.json();
+                const taskId = asyncResult.task_id;
+
+                let pollCount = 0;
+                const maxPolls = 200;
+
+                while (pollCount < maxPolls) {
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+
+                    try {
+                        const statusRes = await fetch(`${Constants.TRANSCRIBE_STATUS_API_URL}/${taskId}`);
+                        const statusData = await statusRes.json();
+
+                        if (statusData.status === 'SUCCEEDED') {
+                            const text = statusData.result?.text || '';
+                            if (onAutoTranscriptionComplete && text) {
+                                onAutoTranscriptionComplete(text, ossUrl);
+                            }
+                            break;
+                        } else if (statusData.status === 'FAILED') {
+                            throw new Error(statusData.message || 'Transcription failed');
+                        }
+                    } catch (err) {
+                        if (pollCount >= 3) {
+                            console.error(`Poll error for segment ${index}:`, err);
+                            break;
+                        }
+                    }
+
+                    pollCount++;
+                }
+            } catch (error) {
+                console.error(`Error processing segment ${index}:`, error);
+            }
+        };
+
+        processSegment();
+    }, [onAutoTranscriptionComplete]);
+
     return (
         <div className="space-y-6">
 
@@ -160,7 +231,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
                         </svg>
                         开始录音采访
                     </button>
-                    
+
                     <div className="flex gap-4 w-full max-w-md">
                         <button
                             onClick={() => setShowUrlModal(true)}
@@ -171,7 +242,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
                             </svg>
                             从链接导入
                         </button>
-                        
+
                         <label className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -200,14 +271,14 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
             {audioData && (
                 <div className="space-y-4">
                     <AudioPlayer audioUrl={audioData.url} mimeType={audioData.mimeType} />
-                    
+
                     <div className="flex items-center justify-between gap-4">
                         <TranscribeButton
                             onClick={handleTranscribeClick}
                             isModelLoading={transcriber.isModelLoading}
                             isTranscribing={transcriber.isBusy}
                         />
-                        
+
                         <button
                             onClick={resetAudio}
                             className="px-4 py-2 text-red-500 hover:text-red-600 transition-colors"
@@ -260,7 +331,11 @@ export function AudioManager({ transcriber, onTranscriptionComplete }: Props) {
                 show={showRecordModal}
                 title="录制音频"
                 content={
-                    <AudioRecorder onRecordingComplete={setAudioFromRecording} />
+                    <AudioRecorder
+                        onRecordingComplete={setAudioFromRecording}
+                        onSegmentAvailable={handleSegmentAvailable}
+                        segmentInterval={30000}
+                    />
                 }
                 onClose={() => setShowRecordModal(false)}
                 onSubmit={() => {}}
