@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import Modal from "./modal/Modal";
 import { UrlInput } from "./modal/UrlInput";
@@ -17,7 +17,7 @@ export enum AudioSource {
 interface Props {
     transcriber: Transcriber;
     onTranscriptionComplete?: (text: string, ossUrl?: string) => void;
-    onAutoTranscriptionComplete?: (text: string, ossUrl?: string) => void;
+    onAutoTranscriptionComplete?: (text: string, ossUrl: string, segmentIndex: number, isFirst: boolean) => void;
 }
 
 export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTranscriptionComplete }: Props) {
@@ -32,12 +32,21 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
     const [showUrlModal, setShowUrlModal] = useState(false);
     const [showRecordModal, setShowRecordModal] = useState(false);
     const [isAutoTranscribing, setIsAutoTranscribing] = useState(false);
+    const [transcribingSegments, setTranscribingSegments] = useState<Record<number, string>>({});
 
     const isAudioLoading = progress !== undefined;
+    const onAutoTranscriptionCompleteRef = useRef(onAutoTranscriptionComplete);
+    const currentNoteIdRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        onAutoTranscriptionCompleteRef.current = onAutoTranscriptionComplete;
+    }, [onAutoTranscriptionComplete]);
 
     const resetAudio = useCallback(() => {
         setAudioData(undefined);
         setAudioDownloadUrl(undefined);
+        currentNoteIdRef.current = null;
+        setTranscribingSegments({});
     }, []);
 
     useEffect(() => {
@@ -151,10 +160,14 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
         setIsAutoTranscribing(true);
         console.log(`Audio segment ${index + 1} available, size: ${blob.size} bytes`);
 
+        setTranscribingSegments(prev => ({ ...prev, [index]: 'uploading' }));
+
         const processSegment = async () => {
             try {
                 const uploadFormData = new FormData();
                 uploadFormData.append('file', blob, `segment-${index}.webm`);
+
+                setTranscribingSegments(prev => ({ ...prev, [index]: 'uploading' }));
 
                 const uploadResponse = await fetch(Constants.UPLOAD_API_URL, {
                     method: 'POST',
@@ -167,6 +180,8 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
 
                 const uploadResult = await uploadResponse.json();
                 const ossUrl = uploadResult.url;
+
+                setTranscribingSegments(prev => ({ ...prev, [index]: 'transcribing' }));
 
                 const asyncResponse = await fetch(Constants.TRANSCRIBE_ASYNC_API_URL, {
                     method: 'POST',
@@ -193,9 +208,15 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
 
                         if (statusData.status === 'SUCCEEDED') {
                             const text = statusData.result?.text || '';
-                            if (onAutoTranscriptionComplete && text) {
-                                onAutoTranscriptionComplete(text, ossUrl);
+                            if (onAutoTranscriptionCompleteRef.current && text) {
+                                const isFirst = index === 0;
+                                onAutoTranscriptionCompleteRef.current(text, ossUrl, index, isFirst);
                             }
+                            setTranscribingSegments(prev => {
+                                const next = { ...prev };
+                                delete next[index];
+                                return next;
+                            });
                             break;
                         } else if (statusData.status === 'FAILED') {
                             throw new Error(statusData.message || 'Transcription failed');
@@ -203,6 +224,11 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
                     } catch (err) {
                         if (pollCount >= 3) {
                             console.error(`Poll error for segment ${index}:`, err);
+                            setTranscribingSegments(prev => {
+                                const next = { ...prev };
+                                delete next[index];
+                                return next;
+                            });
                             break;
                         }
                     }
@@ -211,11 +237,16 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
                 }
             } catch (error) {
                 console.error(`Error processing segment ${index}:`, error);
+                setTranscribingSegments(prev => {
+                    const next = { ...prev };
+                    delete next[index];
+                    return next;
+                });
             }
         };
 
         processSegment();
-    }, [onAutoTranscriptionComplete]);
+    }, []);
 
     return (
         <div className="space-y-6">
@@ -307,6 +338,24 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {Object.keys(transcribingSegments).length > 0 && (
+                <div className="space-y-2">
+                    <label className="text-sm text-slate-600">
+                        自动转录进度: {Object.keys(transcribingSegments).length} 个片段处理中
+                    </label>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }} />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {Object.entries(transcribingSegments).map(([index, status]) => (
+                            <span key={index} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                                片段 {Number(index) + 1}: {status === 'uploading' ? '上传中' : '转录中'}
+                            </span>
+                        ))}
+                    </div>
                 </div>
             )}
 

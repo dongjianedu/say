@@ -31,6 +31,7 @@ function App() {
     const [showInfo, setShowInfo] = useState(true);
     const lastTranscriptionRef = useRef<string | null>(null);
     const notesRef = useRef<Note[]>([]);
+    const currentRecordingNoteIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         const loadNotes = () => {
@@ -107,25 +108,44 @@ function App() {
         }
     }, [updateNotes]);
 
-    const handleAutoTranscriptionComplete = useCallback((text: string, ossUrl?: string) => {
+    const handleAutoTranscriptionComplete = useCallback((text: string, ossUrl: string, segmentIndex: number, isFirst: boolean) => {
         if (!text) return;
         setShowInfo(false);
-        const now = Date.now();
-        const segmentCount = notesRef.current.filter(n => n.title.startsWith('转录片段')).length + 1;
-        const newNote: Note = {
-            id: `${now}-${segmentCount}`,
-            title: `转录片段 ${segmentCount}`,
-            content: text,
-            tags: [],
-            versions: [],
-            created: now,
-            lastEdited: now,
-            ossUrl
-        };
-        const currentNotes = notesRef.current;
-        updateNotes([...currentNotes, newNote]);
-        setSelectedNoteId(newNote.id);
-        setShowNoteList(true);
+
+        if (isFirst) {
+            const now = Date.now();
+            const newNote: Note = {
+                id: now.toString(),
+                title: '采访转录',
+                content: text,
+                tags: [],
+                versions: [],
+                created: now,
+                lastEdited: now,
+                ossUrl
+            };
+            currentRecordingNoteIdRef.current = newNote.id;
+            const currentNotes = notesRef.current;
+            updateNotes([...currentNotes, newNote]);
+            setSelectedNoteId(newNote.id);
+            setShowNoteList(true);
+        } else {
+            const noteId = currentRecordingNoteIdRef.current;
+            if (noteId) {
+                const currentNotes = notesRef.current;
+                const updatedNotes = currentNotes.map(note => {
+                    if (note.id === noteId) {
+                        return {
+                            ...note,
+                            content: note.content + '\n\n---\n\n' + text,
+                            lastEdited: Date.now()
+                        };
+                    }
+                    return note;
+                });
+                updateNotes(updatedNotes);
+            }
+        }
     }, [updateNotes]);
 
     const handleDeleteNote = useCallback((id: string) => {
