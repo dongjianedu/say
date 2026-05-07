@@ -20,6 +20,7 @@ from dashscope.api_entities.dashscope_response import TranscriptionResponse
 logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "fun-asr-realtime"
+BATCH_MODEL = "fun-asr"
 POLL_INTERVAL = 3
 MAX_WAIT_TIME = 600
 
@@ -230,6 +231,89 @@ class TranscriberService:
 
         result = self._wait_for_result(task_id)
         return self._parse_result(result)
+
+    async def submit_async_transcription(
+        self,
+        audio_url: str
+    ) -> dict:
+        """
+        提交异步转录任务（使用 fun-asr 批量模式）
+        适用于 OSS 等 HTTP/HTTPS 可访问的音频文件 URL
+
+        Args:
+            audio_url: 音频文件的 HTTP/HTTPS URL
+
+        Returns:
+            {"task_id": "xxx", "status": "PENDING"}
+        """
+        if not self.is_configured:
+            raise Exception("转录服务未配置，请设置 DASHSCOPE_API_KEY 或 TRANSCRIBE_API_KEY")
+
+        response = dashscope.audio.asr.Transcription.async_call(
+            model=BATCH_MODEL,
+            file_urls=[audio_url]
+        )
+
+        if response.status_code != HTTPStatus.OK:
+            error_msg = f"{response.code} - {response.message}"
+            logger.error(f"提交异步转录任务失败: {error_msg}")
+            raise Exception(f"提交转录任务失败: {error_msg}")
+
+        task_id = response.output.task_id
+        logger.info(f"异步转录任务已提交，task_id: {task_id}, url: {audio_url}")
+
+        return {
+            "task_id": task_id,
+            "status": "PENDING"
+        }
+
+    async def get_transcription_status(
+        self,
+        task_id: str
+    ) -> dict:
+        """
+        查询异步转录任务状态
+
+        Args:
+            task_id: 转录任务 ID
+
+        Returns:
+            {"task_id": "xxx", "status": "PENDING|RUNNING|SUCCEEDED|FAILED", "result": {...}, "message": "..."}
+        """
+        if not self.is_configured:
+            raise Exception("转录服务未配置")
+
+        response = dashscope.audio.asr.Transcription.wait(task=task_id)
+
+        if response.status_code != HTTPStatus.OK:
+            raise Exception(f"查询任务状态失败: {response.code} - {response.message}")
+
+        task_status = response.output.task_status
+        result_data = None
+        error_msg = None
+
+        if task_status == "SUCCEEDED":
+            try:
+                result_data = self._parse_result(response)
+            except Exception as e:
+                logger.error(f"解析转录结果失败: {e}")
+                error_msg = str(e)
+                task_status = "FAILED"
+
+        elif task_status == "FAILED":
+            results = response.output.get("results", [])
+            if results:
+                error_msg = results[0].get("message", response.output.get("message", "未知错误"))
+            else:
+                error_msg = response.output.get("message", "未知错误")
+            logger.error(f"转录任务失败: {task_id}, error: {error_msg}")
+
+        return {
+            "task_id": task_id,
+            "status": task_status,
+            "result": result_data,
+            "message": error_msg
+        }
 
     def _wait_for_result(self, task_id: str) -> TranscriptionResponse:
         import time

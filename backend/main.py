@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from services.transcriber import TranscriberService
 from services.summarizer import SummarizerService
 from services.oss import OSSService
@@ -38,7 +38,8 @@ oss_service = OSSService(
     access_key_secret=os.getenv("OSS_ACCESS_KEY_SECRET", ""),
     endpoint=os.getenv("OSS_ENDPOINT", "oss-cn-beijing.aliyuncs.com"),
     bucket_name=os.getenv("OSS_BUCKET_NAME", "gediao9"),
-    accesspoint_url=os.getenv("OSS_ACCESSPOINT_URL", "")
+    accesspoint_url=os.getenv("OSS_ACCESSPOINT_URL", ""),
+    region="cn-beijing"
 )
 
 # 请求模型
@@ -65,11 +66,24 @@ class UploadResponse(BaseModel):
     filename: str
     size: int
 
+class AsyncTranscribeRequest(BaseModel):
+    audio_url: str
+
+class AsyncTranscribeResponse(BaseModel):
+    task_id: str
+    status: str
+
+class TranscribeStatusResponse(BaseModel):
+    task_id: str
+    status: str
+    result: Optional[dict] = None
+    message: Optional[str] = None
+
 @app.post("/transcribe", response_model=TranscribeResponse)
 async def transcribe(audio: UploadFile = File(...), language: Optional[str] = None):
     """
-    接收音频文件，通过云服务返回转录文本
-    支持格式: wav, mp3, webm, m4a 等
+    接收音频文件，通过云服务返回转录文本（同步模式）
+    支持格式: wav, mp3, webm, opus, m4a, ogg 等
     """
     try:
         audio_bytes = await audio.read()
@@ -77,6 +91,35 @@ async def transcribe(audio: UploadFile = File(...), language: Optional[str] = No
         return TranscribeResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"转录失败: {str(e)}")
+
+@app.post("/transcribe-async", response_model=AsyncTranscribeResponse)
+async def transcribe_async(request: AsyncTranscribeRequest):
+    """
+    提交异步转录任务（使用 fun-asr 批量模式）
+    适用于 OSS 等 HTTP/HTTPS 可访问的音频文件 URL
+    提交后立即返回 task_id，通过 /transcribe-status/{task_id} 查询结果
+    """
+    try:
+        result = await transcriber_service.submit_async_transcription(request.audio_url)
+        return AsyncTranscribeResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"提交转录任务失败: {str(e)}")
+
+@app.get("/transcribe-status/{task_id}", response_model=TranscribeStatusResponse)
+async def get_transcribe_status(task_id: str):
+    """
+    查询异步转录任务状态
+    状态说明:
+    - PENDING: 任务排队中
+    - RUNNING: 任务处理中
+    - SUCCEEDED: 任务完成，result 字段包含转录结果
+    - FAILED: 任务失败，message 字段包含错误信息
+    """
+    try:
+        result = await transcriber_service.get_transcription_status(task_id)
+        return TranscribeStatusResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"查询任务状态失败: {str(e)}")
 
 @app.post("/summarize", response_model=SummarizeResponse)
 async def summarize(request: SummarizeRequest):
@@ -97,19 +140,28 @@ async def summarize(request: SummarizeRequest):
         raise HTTPException(status_code=500, detail=f"摘要生成失败: {str(e)}")
 
 @app.post("/upload", response_model=UploadResponse)
-async def upload_to_oss(file: UploadFile = File(...), folder: Optional[str] = "audio"):
+async def upload_to_oss(
+    file: UploadFile = File(...),
+    folder: Optional[str] = "audio",
+    multipart_threshold: Optional[int] = None
+):
     """
     上传文件到阿里云 OSS
     支持音频、视频、文档等格式
+    大文件（>= 100MB）自动使用分片上传
     """
     try:
         file_bytes = await file.read()
-        file_url = await oss_service.upload_file(
-            file_bytes=file_bytes,
-            filename=file.filename or "unknown",
-            folder=folder,
-            content_type=file.content_type
-        )
+        kwargs = {
+            "file_bytes": file_bytes,
+            "filename": file.filename or "unknown",
+            "folder": folder,
+            "content_type": file.content_type
+        }
+        if multipart_threshold is not None:
+            kwargs["multipart_threshold"] = multipart_threshold
+
+        file_url = await oss_service.upload_file(**kwargs)
         return UploadResponse(
             url=file_url,
             filename=file.filename or "unknown",
