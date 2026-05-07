@@ -379,6 +379,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
             <Modal
                 show={showRecordModal}
                 title="录制音频"
+                transparent={true}
                 content={
                     <AudioRecorder
                         onRecordingComplete={setAudioFromRecording}

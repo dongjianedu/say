@@ -80,7 +80,7 @@ const AudioRecorder: React.FC<Props> = ({
         const x = i * totalBarWidth;
         const y = height - barHeight;
 
-        ctx.fillStyle = `rgb(96, 165, 250)`;
+        ctx.fillStyle = `rgba(96, 165, 250, 0.8)`;
         ctx.fillRect(x, y, barWidth, barHeight);
       }
     };
