@@ -1,6 +1,8 @@
 import os
+import json
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 from services.transcriber import TranscriberService
@@ -138,6 +140,36 @@ async def summarize(request: SummarizeRequest):
         return SummarizeResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"摘要生成失败: {str(e)}")
+
+@app.post("/summarize-stream")
+async def summarize_stream(request: SummarizeRequest):
+    """
+    流式生成文本摘要，返回 Server-Sent Events
+    支持打字机效果，实时显示生成内容
+    """
+    async def generate():
+        try:
+            async for token in summarizer_service.summarize_with_template_stream(
+                text=request.text,
+                template_name=request.template_name,
+                model=request.model,
+                max_tokens=request.max_tokens,
+                temperature=request.temperature
+            ):
+                yield f"data: {json.dumps({'token': token})}\n\n"
+            yield f"data: {json.dumps({'done': True})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 @app.post("/upload", response_model=UploadResponse)
 async def upload_to_oss(

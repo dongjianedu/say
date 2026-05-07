@@ -7,10 +7,11 @@
 """
 
 import httpx
+import json
 import logging
 import os
 import yaml
-from typing import Optional
+from typing import Optional, AsyncGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +125,76 @@ class SummarizerService:
             raise Exception(f"聊天接口调用失败: {str(e)}")
         except Exception as e:
             logger.error(f"Chat error: {e}")
+            raise
+
+    async def chat_stream(
+        self,
+        messages: list,
+        model: Optional[str] = None,
+        max_tokens: int = 2048,
+        temperature: float = 0.7,
+    ) -> AsyncGenerator[str, None]:
+        """
+        流式聊天接口，逐 token 返回
+        
+        Args:
+            messages: 消息列表
+            model: 模型名称
+            max_tokens: 最大 token 数
+            temperature: 温度参数
+            
+        Yields:
+            每个 token 的文本片段
+        """
+        if not self.is_configured:
+            raise Exception("摘要服务未配置，请设置 SUMMARIZE_API_KEY 和 SUMMARIZE_BASE_URL")
+
+        actual_model = model if model and model != "default" else self.default_model
+
+        try:
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                headers = {
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                }
+
+                payload = {
+                    "model": actual_model,
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                    "stream": True,
+                }
+
+                async with client.stream(
+                    "POST",
+                    self._get_chat_url(),
+                    headers=headers,
+                    json=payload
+                ) as response:
+                    response.raise_for_status()
+                    
+                    async for line in response.aiter_lines():
+                        if not line:
+                            continue
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str.strip() == "[DONE]":
+                                break
+                            try:
+                                data = json.loads(data_str)
+                                delta = data.get("choices", [{}])[0].get("delta", {})
+                                content = delta.get("content", "")
+                                if content:
+                                    yield content
+                            except json.JSONDecodeError:
+                                continue
+
+        except httpx.HTTPError as e:
+            logger.error(f"Chat stream API error: {e}")
+            raise Exception(f"流式聊天接口调用失败: {str(e)}")
+        except Exception as e:
+            logger.error(f"Chat stream error: {e}")
             raise
 
     async def summarize(
@@ -241,4 +312,60 @@ class SummarizerService:
 
         except Exception as e:
             logger.error(f"Template summarization error: {e}")
+            raise
+
+    async def summarize_with_template_stream(
+        self,
+        text: str,
+        template_name: str = "interview_summary",
+        model: Optional[str] = None,
+        max_tokens: int = 1024,
+        temperature: float = 0.3,
+        **kwargs
+    ) -> AsyncGenerator[str, None]:
+        """
+        使用指定模板流式生成摘要
+
+        Args:
+            text: 输入文本
+            template_name: 模板名称
+            model: 模型名称
+            max_tokens: 最大 token 数
+            temperature: 温度参数
+            **kwargs: 其他模板变量
+
+        Yields:
+            每个 token 的文本片段
+        """
+        if not self.is_configured:
+            raise Exception("摘要服务未配置")
+
+        try:
+            format_kwargs = {
+                "text": text,
+                "min_length": kwargs.get("min_length", 200),
+                "max_length": kwargs.get("max_length", 500),
+            }
+            format_kwargs.update(kwargs)
+
+            prompt = self.prompt_template.format_prompt(
+                template_name,
+                **format_kwargs
+            )
+
+            messages = [
+                {"role": "system", "content": prompt["system_prompt"]},
+                {"role": "user", "content": prompt["user_prompt"]}
+            ]
+
+            async for token in self.chat_stream(
+                messages=messages,
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            ):
+                yield token
+
+        except Exception as e:
+            logger.error(f"Template stream summarization error: {e}")
             raise

@@ -26,7 +26,7 @@ export default function TextSummary({
         </button>
       </div>
 
-      {isLoading && (
+      {isLoading && !summary && (
         <div className="flex items-center gap-2 text-gray-600">
           <svg
             className="animate-spin h-5 w-5"
@@ -54,7 +54,12 @@ export default function TextSummary({
 
       {summary && (
         <div className="prose max-w-none">
-          <p className="text-gray-700 whitespace-pre-wrap">{summary}</p>
+          <p className="text-gray-700 whitespace-pre-wrap">
+            {summary}
+            {isLoading && (
+              <span className="inline-block w-2 h-5 bg-blue-500 ml-0.5 animate-pulse" />
+            )}
+          </p>
         </div>
       )}
     </div>

@@ -35,5 +35,6 @@ export default {
     TRANSCRIBE_ASYNC_API_URL: "http://47.95.178.169:8000/transcribe-async",
     TRANSCRIBE_STATUS_API_URL: "http://47.95.178.169:8000/transcribe-status",
     SUMMARIZE_API_URL: "http://47.95.178.169:8000/summarize",
+    SUMMARIZE_STREAM_API_URL: "http://47.95.178.169:8000/summarize-stream",
     UPLOAD_API_URL: "http://47.95.178.169:8000/upload",
 };
