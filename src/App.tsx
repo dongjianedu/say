@@ -237,13 +237,15 @@ function App() {
 
     const filteredNotes = useMemo(() => {
         const searchLower = searchQuery.toLowerCase();
-        return notes.filter(note => {
-            return (
-                note.title.toLowerCase().includes(searchLower) ||
-                note.content.toLowerCase().includes(searchLower) ||
-                note.tags.some(tag => tag.toLowerCase().includes(searchLower))
-            );
-        })
+        return notes
+            .filter(note => {
+                return (
+                    note.title.toLowerCase().includes(searchLower) ||
+                    note.content.toLowerCase().includes(searchLower) ||
+                    note.tags.some(tag => tag.toLowerCase().includes(searchLower))
+                );
+            })
+            .sort((a, b) => b.lastEdited - a.lastEdited);
     }, [notes, searchQuery]);
 
     if (!isLoaded) {
