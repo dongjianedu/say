@@ -146,38 +146,35 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
     }
   };
 
-  const handleCopyToClipboard = () => {
-    if (editorRef.current) {
-      const htmlContent = editorRef.current.getContent();
-      const textContent = editorRef.current.getContent({format: 'text'});
-      
+  const handleCopyToClipboard = async () => {
+    const textToCopy = summary || (editorRef.current ? editorRef.current.getContent({ format: 'text' }) : '');
+    if (!textToCopy.trim()) return;
+
+    const button = document.getElementById('copyButton');
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+    } catch (err) {
+      const textarea = document.createElement('textarea');
+      textarea.value = textToCopy;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
       try {
-        const clipboardData = new ClipboardItem({
-          'text/html': new Blob([htmlContent], { type: 'text/html' }),
-          'text/plain': new Blob([textContent], { type: 'text/plain' })
-        });
-        navigator.clipboard.write([clipboardData]).then(() => {
-          const button = document.getElementById('copyButton');
-          if (button) {
-            const originalText = button.textContent;
-            button.textContent = 'Copied!';
-            setTimeout(() => {
-              button.textContent = originalText;
-            }, 2000);
-          }
-        });
-      } catch (err) {
-        navigator.clipboard.writeText(textContent).then(() => {
-          const button = document.getElementById('copyButton');
-          if (button) {
-            const originalText = button.textContent;
-            button.textContent = 'Copied!';
-            setTimeout(() => {
-              button.textContent = originalText;
-            }, 2000);
-          }
-        });
+        document.execCommand('copy');
+      } catch (e) {
+        console.error('Copy failed:', e);
       }
+      document.body.removeChild(textarea);
+    }
+
+    if (button) {
+      const originalText = button.textContent;
+      button.textContent = summary ? '摘要已复制!' : '笔记已复制!';
+      setTimeout(() => {
+        button.textContent = originalText;
+      }, 2000);
     }
   };
 

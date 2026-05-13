@@ -1,4 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
+import type { PluginListenerHandle } from '@capacitor/core';
+import { AudioRecorder } from '../../capacitor-plugins/audio-recorder/src';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { LiveAudioVisualizer } from 'react-audio-visualize';
 
 interface Props {
   onRecordingComplete: (blob: Blob) => void;
@@ -7,6 +12,8 @@ interface Props {
   onRecordingStop?: () => void;
   segmentInterval?: number;
 }
+
+const isNative = Capacitor.isNativePlatform();
 
 function getSupportedMimeType(): string {
   const types = [
@@ -25,7 +32,7 @@ function getSupportedMimeType(): string {
   return 'audio/webm';
 }
 
-const AudioRecorder: React.FC<Props> = ({
+const AudioRecorderComponent: React.FC<Props> = ({
   onRecordingComplete,
   onSegmentAvailable,
   onRecordingStart,
@@ -34,10 +41,8 @@ const AudioRecorder: React.FC<Props> = ({
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
   const timeInterval = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const activeRecorderRef = useRef<MediaRecorder | null>(null);
@@ -45,7 +50,11 @@ const AudioRecorder: React.FC<Props> = ({
   const segmentIndexRef = useRef(0);
   const segmentTimeoutRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const visualizerActiveRef = useRef(false);
+  const nativeListenerRef = useRef<PluginListenerHandle | null>(null);
 
   const drawVisualizer = useCallback(() => {
     const canvas = canvasRef.current;
@@ -103,6 +112,7 @@ const AudioRecorder: React.FC<Props> = ({
       if (segmentTimeoutRef.current) clearTimeout(segmentTimeoutRef.current);
       if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
       if (audioContextRef.current) audioContextRef.current.close();
+      nativeListenerRef.current?.remove();
     };
   }, [stopVisualizer]);
 
@@ -127,8 +137,56 @@ const AudioRecorder: React.FC<Props> = ({
     }
   }, [isRecording, drawVisualizer, stopVisualizer]);
 
+  const handleNativeSegment = useCallback(async (segment: { filePath: string; index: number }) => {
+    try {
+      const fileData = await Filesystem.readFile({
+        path: segment.filePath,
+        directory: Directory.Cache,
+      });
+
+      let blob: Blob;
+      if (typeof fileData.data === 'string') {
+        const byteCharacters = atob(fileData.data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        blob = new Blob([byteArray], { type: 'audio/mp4' });
+      } else {
+        blob = new Blob([fileData.data], { type: 'audio/mp4' });
+      }
+
+      onSegmentAvailable?.(blob, segment.index);
+    } catch (error) {
+      console.error('Error reading native segment file:', error);
+    }
+  }, [onSegmentAvailable]);
+
   const startRecording = async () => {
     try {
+      if (isNative) {
+        nativeListenerRef.current = await AudioRecorder.addListener(
+          'segmentAvailable',
+          handleNativeSegment
+        );
+        await AudioRecorder.addListener(
+          'recordingError',
+          (error: { message: string }) => {
+            console.error('Native recording error:', error.message);
+            alert('录音出错: ' + error.message);
+          }
+        );
+        await AudioRecorder.startRecording({ segmentInterval });
+        setIsRecording(true);
+        onRecordingStart?.();
+
+        timeInterval.current = window.setInterval(() => {
+          setRecordingTime(prev => prev + 1);
+        }, 1000);
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -194,7 +252,21 @@ const AudioRecorder: React.FC<Props> = ({
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
+    if (isNative) {
+      await AudioRecorder.stopRecording();
+      nativeListenerRef.current?.remove();
+      nativeListenerRef.current = null;
+      setIsRecording(false);
+      if (timeInterval.current) {
+        clearInterval(timeInterval.current);
+        timeInterval.current = null;
+      }
+      setRecordingTime(0);
+      onRecordingStop?.();
+      return;
+    }
+
     isRecordingRef.current = false;
     if (activeRecorderRef.current && activeRecorderRef.current.state !== 'inactive') {
       activeRecorderRef.current.stop();
@@ -223,19 +295,59 @@ const AudioRecorder: React.FC<Props> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const nativeWaveformRef = useRef<HTMLDivElement>(null);
+  const [waveformHeights, setWaveformHeights] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (isRecording && isNative) {
+      const barCount = 200;
+      setWaveformHeights(Array(barCount).fill(10));
+      const interval = setInterval(() => {
+        setWaveformHeights(prev =>
+          prev.map(() => Math.random() * 90 + 10)
+        );
+      }, 100);
+      return () => clearInterval(interval);
+    } else {
+      setWaveformHeights([]);
+    }
+  }, [isRecording, isNative]);
+
   return (
     <div className="flex flex-col items-center gap-4 p-6 w-full max-w-2xl mx-auto">
       <div className="w-full bg-white rounded-lg p-6 shadow-lg">
         <h2 className="text-2xl font-bold mb-4">录制音频</h2>
         <div className="relative w-full">
-          <div className="w-full h-40 rounded-lg mb-4 bg-[rgb(15,23,42)] flex items-center justify-center overflow-hidden">
-            <canvas
-              ref={canvasRef}
-              width={800}
-              height={160}
-              className="w-full h-full"
-            />
-          </div>
+          {isRecording && !isNative ? (
+            <div className="w-full h-40 rounded-lg mb-4 bg-[rgb(15,23,42)] flex items-center justify-center overflow-hidden">
+              <canvas
+                ref={canvasRef}
+                width={800}
+                height={160}
+                className="w-full h-full"
+              />
+            </div>
+          ) : isRecording && isNative ? (
+            <div className="w-full h-40 rounded-lg mb-4 bg-[rgb(15,23,42)] flex items-center justify-center overflow-hidden">
+              <div className="flex items-center justify-center gap-[2px] h-full px-4">
+                {waveformHeights.map((height, i) => (
+                  <div
+                    key={i}
+                    className="w-[3px] rounded-full bg-blue-400 transition-all duration-100"
+                    style={{ height: `${height}%`, opacity: 0.6 + (height / 250) }}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div
+              className="w-full h-40 rounded-lg mb-4 bg-[rgb(15,23,42)] flex items-center justify-center"
+            >
+              <span className="text-white/50">
+                点击"开始录音"按钮开始
+              </span>
+            </div>
+          )}
         </div>
         <div className="text-center mb-4">
           <div className="text-xl font-semibold text-gray-700">
@@ -243,7 +355,7 @@ const AudioRecorder: React.FC<Props> = ({
           </div>
           {isRecording && (
             <div className="text-sm text-blue-500 mt-1">
-              每30秒自动转录一次
+              {isNative ? '后台录音已启用' : '每30秒自动转录一次'}
             </div>
           )}
         </div>
@@ -263,4 +375,4 @@ const AudioRecorder: React.FC<Props> = ({
   );
 };
 
-export default AudioRecorder;
+export default AudioRecorderComponent;

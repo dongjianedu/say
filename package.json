@@ -11,9 +11,21 @@
     "lint": "eslint src/**/*.{js,jsx,ts,tsx,json}",
     "lint:fix": "eslint --fix src/**/*.{js,jsx,ts,tsx,json}",
     "format": "prettier --write src/**/*.{js,jsx,ts,tsx,css,md,json} --config ./.prettierrc",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "cap:init": "cap init \"格调9问\" com.gediao9.app --web-dir dist",
+    "cap:add:ios": "cap add ios",
+    "cap:add:android": "cap add android",
+    "cap:copy": "cap copy",
+    "cap:sync": "cap sync",
+    "cap:open:ios": "cap open ios",
+    "cap:open:android": "cap open android",
+    "native:build": "npm run build && npm run cap:sync"
   },
   "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/filesystem": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
     "@headlessui/react": "^1.7.13",
     "@tinymce/tinymce-react": "^5.1.1",
     "@xenova/transformers": "^2.7.0",
@@ -24,6 +36,7 @@
     "react-icons": "^4.11.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
     "@types/chrome": "^0.0.279",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",

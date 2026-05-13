@@ -19,8 +19,8 @@ from dashscope.api_entities.dashscope_response import TranscriptionResponse
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "fun-asr-realtime"
-BATCH_MODEL = "fun-asr"
+DEFAULT_MODEL = "fun-asr-realtime-2025-09-15"
+BATCH_MODEL = "fun-asr-2025-11-07"
 POLL_INTERVAL = 3
 MAX_WAIT_TIME = 600
 
