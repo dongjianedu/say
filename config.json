@@ -1,0 +1,18 @@
+{
+  "id": "ws_e301728a",
+  "name": "say",
+  "slug": "say",
+  "defaults": {
+    "permissionMode": "safe",
+    "cyclablePermissionModes": [
+      "safe",
+      "allow-all"
+    ],
+    "enabledSourceSlugs": []
+  },
+  "localMcpServers": {
+    "enabled": true
+  },
+  "createdAt": 1777459019927,
+  "updatedAt": 1777459019929
+}

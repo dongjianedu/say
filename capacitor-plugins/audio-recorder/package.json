@@ -1,0 +1,17 @@
+{
+  "name": "@gediao9/audio-recorder",
+  "version": "1.0.0",
+  "description": "Capacitor audio recorder plugin with background recording support",
+  "main": "dist/plugin.cjs.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.5"
+  }
+}

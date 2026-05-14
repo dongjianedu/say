@@ -1,0 +1,22 @@
+{
+  "appId": "com.gediao9.app",
+  "appName": "格调9问",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "iosScheme": "https",
+    "allowNavigation": [
+      "47.95.178.169"
+    ]
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#1e293b",
+      "showSpinner": false
+    },
+    "AudioRecorder": {
+      "segmentInterval": 30000
+    }
+  }
+}
