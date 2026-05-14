@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">格调9问</string>
+    <string name="title_activity_main">格调9问</string>
+    <string name="package_name">com.gediao9.app</string>
+    <string name="custom_url_scheme">com.gediao9.app</string>
+</resources>
