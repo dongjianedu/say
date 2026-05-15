@@ -1,5 +1,7 @@
 import UIKit
+import WebKit
 import Capacitor
+import AudioRecorderPlugin
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,7 +9,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Force the linker to include AudioRecorderPlugin
+        let pluginClass: AnyClass = AudioRecorderPlugin.self
+        // Ensure the class is registered with the Objective-C runtime
+        let _ = NSClassFromString("AudioRecorderPlugin")
+        CAPLog.enableLogging = true
+        CAPLog.print("AudioRecorderPlugin class: \(pluginClass)")
         return true
     }
 

@@ -274,7 +274,13 @@ function App() {
 
     return (
         <div className='flex flex-col min-h-screen bg-slate-50'>
-            <header className='bg-slate-800 text-white p-4 shadow-lg'>
+            {/* DEBUG: test if any click works */}
+            <div id="debug-area" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999, background: 'red', color: 'white', padding: '10px', textAlign: 'center', fontWeight: 'bold' }} onClick={() => { const el = document.getElementById('debug-msg'); if (el) { el.style.display = 'block'; el.textContent = 'CLICKED!'; } }}>
+                点击这里测试
+            </div>
+            <div id="debug-msg" style={{ display: 'none' }}></div>
+
+            <header className='bg-slate-800 text-white p-4 shadow-lg' style={{ marginTop: '36px' }}>
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
                         <h1 className='text-3xl font-bold'>格调9问AI助手</h1>

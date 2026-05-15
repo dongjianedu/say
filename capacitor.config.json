@@ -4,7 +4,7 @@
   "webDir": "dist",
   "server": {
     "androidScheme": "http",
-    "iosScheme": "https",
+    "iosScheme": "capacitor",
     "allowNavigation": [
       "47.95.178.169"
     ]
@@ -18,5 +18,11 @@
     "AudioRecorder": {
       "segmentInterval": 30000
     }
+  },
+  "ios": {
+    "contentInset": "never",
+    "allowsLinkPreview": false,
+    "overScrollEnabled": true,
+    "backgroundColor": "#ffffff"
   }
 }

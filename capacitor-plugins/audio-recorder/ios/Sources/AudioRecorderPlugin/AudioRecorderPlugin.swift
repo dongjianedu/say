@@ -3,7 +3,14 @@ import AVFoundation
 import Capacitor
 
 @objc(AudioRecorderPlugin)
-public class AudioRecorderPlugin: CAPPlugin {
+public class AudioRecorderPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "AudioRecorderPlugin"
+    public let jsName = "AudioRecorder"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "startRecording", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "stopRecording", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getSegments", returnType: CAPPluginReturnPromise),
+    ]
     private var audioRecorder: AVAudioRecorder?
     private var audioSession: AVAudioSession?
     private var segmentTimer: Timer?

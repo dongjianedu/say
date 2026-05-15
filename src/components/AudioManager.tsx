@@ -21,6 +21,7 @@ interface Props {
 }
 
 export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTranscriptionComplete }: Props) {
+    const [debugMsg, setDebugMsg] = useState<string>('');
     const [progress, setProgress] = useState<number | undefined>(undefined);
     const [audioData, setAudioData] = useState<{
         blob: Blob;
@@ -108,7 +109,7 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
                     },
                 });
 
-                let mimeType = headers["content-type"];
+                let mimeType = String(headers["content-type"] || "");
                 if (!mimeType || mimeType === "audio/wave") {
                     mimeType = "audio/wav";
                 }
@@ -158,7 +159,8 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
 
     const handleSegmentAvailable = useCallback((blob: Blob, index: number) => {
         setIsAutoTranscribing(true);
-        console.log(`Audio segment ${index + 1} available, size: ${blob.size} bytes`);
+        console.log(`[UPLOAD] Audio segment ${index + 1} available, size: ${blob.size} bytes`);
+        console.log(`[UPLOAD] Target URL: ${Constants.UPLOAD_API_URL}`);
 
         setTranscribingSegments(prev => ({ ...prev, [index]: 'uploading' }));
 
@@ -169,10 +171,13 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
 
                 setTranscribingSegments(prev => ({ ...prev, [index]: 'uploading' }));
 
+                console.log(`[UPLOAD] Sending POST to ${Constants.UPLOAD_API_URL}`);
                 const uploadResponse = await fetch(Constants.UPLOAD_API_URL, {
                     method: 'POST',
                     body: uploadFormData,
                 });
+
+                console.log(`[UPLOAD] Response status: ${uploadResponse.status}`);
 
                 if (!uploadResponse.ok) {
                     throw new Error(`Upload failed! status: ${uploadResponse.status}`);
@@ -237,11 +242,9 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
                 }
             } catch (error) {
                 console.error(`Error processing segment ${index}:`, error);
-                setTranscribingSegments(prev => {
-                    const next = { ...prev };
-                    delete next[index];
-                    return next;
-                });
+                const msg = error instanceof Error ? error.message : String(error);
+                setTranscribingSegments(prev => ({ ...prev, [index]: `failed: ${msg}` }));
+                setDebugMsg(`上传失败: ${msg}`);
             }
         };
 
@@ -253,8 +256,9 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
 
             {!audioData && (
                 <div className="flex flex-col items-center gap-4">
+                    {debugMsg && <div className="text-sm text-yellow-600 bg-yellow-50 p-2 rounded w-full">{debugMsg}</div>}
                     <button
-                        onClick={() => setShowRecordModal(true)}
+                        onClick={() => { setDebugMsg('按钮已点击!'); setShowRecordModal(true); }}
                         className="w-full max-w-md px-6 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all text-lg font-semibold flex items-center justify-center gap-3"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -351,8 +355,13 @@ export function AudioManager({ transcriber, onTranscriptionComplete, onAutoTrans
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {Object.entries(transcribingSegments).map(([index, status]) => (
-                            <span key={index} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                                片段 {Number(index) + 1}: {status === 'uploading' ? '上传中' : '转录中'}
+                            <span key={index} className={`text-xs px-2 py-1 rounded ${
+                                status === 'uploading' ? 'bg-blue-100 text-blue-700' :
+                                status === 'transcribing' ? 'bg-yellow-100 text-yellow-700' :
+                                status.startsWith('failed:') ? 'bg-red-100 text-red-700' :
+                                'bg-green-100 text-green-700'
+                            }`}>
+                                片段 {Number(index) + 1}: {status}
                             </span>
                         ))}
                     </div>

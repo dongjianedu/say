@@ -139,9 +139,11 @@ const AudioRecorderComponent: React.FC<Props> = ({
 
   const handleNativeSegment = useCallback(async (segment: { filePath: string; index: number }) => {
     try {
+      console.log(`[NATIVE] Segment ${segment.index} available at: ${segment.filePath}`);
+      // Native plugin writes to NSTemporaryDirectory, which is an absolute path
+      // Use path as-is without directory resolution
       const fileData = await Filesystem.readFile({
         path: segment.filePath,
-        directory: Directory.Cache,
       });
 
       let blob: Blob;
@@ -249,6 +251,14 @@ const AudioRecorderComponent: React.FC<Props> = ({
       }, 1000);
     } catch (err) {
       console.error('Error accessing microphone:', err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission denied')) {
+        alert('麦克风权限被拒绝。请在系统设置中允许访问麦克风。');
+      } else if (errorMessage.includes('NotFoundError') || errorMessage.includes('not found')) {
+        alert('未检测到麦克风设备。');
+      } else {
+        alert('无法访问麦克风: ' + errorMessage);
+      }
     }
   };
 
